@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "headerDisplay": "Homebridge plugin for door sensors using the Tuya Cloud API.",
-  "footerDisplay": "If you have any suggestions, please open an issue on [GitHub](https://github.com/Kakise/homebridge-tuya-door-cloud/issues).",
+  "footerDisplay": "If you have any suggestions, please open an issue on [GitHub](https://github.com/timsayles1/homebridge-tuya-door-cloud/issues).",
   "schema": {
     "type": "object",
     "properties": {
@@ -33,40 +33,8 @@
           "cloudCode": {
             "title": "Cloud Region",
             "type": "string",
-            "description": "The cloud region where your account is located",
+            "description": "The cloud region api url where your account is located",
             "default": "form",
-            "oneOf": [
-              {
-                "title": "Europe",
-                "enum": [
-                  "eu"
-                ]
-              },
-              {
-                "title": "China",
-                "enum": [
-                  "cn"
-                ]
-              },
-              {
-                "title": "America",
-                "enum": [
-                  "us"
-                ]
-              },
-              {
-                "title": "India",
-                "enum": [
-                  "in"
-                ]
-              },
-              {
-                "title": "America",
-                "enum": [
-                  "us"
-                ]
-              }
-            ],
             "required": true
           }
         }
