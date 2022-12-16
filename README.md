@@ -1,13 +1,11 @@
 # Homebridge Tuya Door Sensor Plugin
 
+Forked from Kakise/homebridge-tuya-door-cloud
+
 This plugin allows you to use a Tuya compatible door sensor such as [this one](https://www.aliexpress.com/item/1-10PCS-Tuya-Smart-WiFi-Door-Sensor-Door-Open-Closed-Detectors-WiFi-App-Notification-Alert-alarm/1005002199685362.html?spm=a2g0s.12269583.0.0.3931791cDXxTrM) and shows it in the Home App through Homebridge.
 It uses the Tuya Cloud API to get the device state and update it in Homebridge.
 
-You can support me buy sending some bucks my way on paypal: [right here](https://paypal.me/kakiseStash)
-
-## How to install
-You can install this plugin like you'd install any other plugin via:
-```npm i homebridge-tuya-door-cloud -g```
+Code was updated to be compatible with the Tuya Eastern US data center as well as other code updates for Tuya API upgrades.
 
 ## Disclaimer
 
@@ -54,7 +52,7 @@ If for some reason the Homebridge UI doesn't work (it's the case for me), here's
             "options": {
                 "access_id": "YOUR ACCESS ID",
                 "secret_id": "YOUR SECRET KEY",
-                "cloudCode": "YOUR REGION"
+                "cloudCode": "YOUR REGION API ENDPOINT"
             },
             "defaults": [
                 {
