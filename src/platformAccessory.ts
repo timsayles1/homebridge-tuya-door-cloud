@@ -21,7 +21,7 @@ export class TuyaDoor {
 
     // Set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Kakise') // me :)
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Tuya')
       .setCharacteristic(this.platform.Characteristic.Model, 'Tuya Door Sensor')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Tuya-Door-Homebridge');
 
