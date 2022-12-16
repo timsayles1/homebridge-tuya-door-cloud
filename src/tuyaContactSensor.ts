@@ -32,7 +32,7 @@ export class TuyaApi {
 
     // Setup a default axios object for easier rest calls
     this.api = axios.create({
-      baseURL: 'https://openapi.tuya'+this.platform.config.options.cloudCode+'.com',
+      baseURL: this.platform.config.options.cloudCode,
       headers: {
         'sign_method': 'HMAC-SHA256',
         'client_id': this.client_id,
@@ -79,6 +79,7 @@ export class TuyaApi {
       // regenerate an access token please 🥺
       this.platform.log.debug('Generating new token');
       const sign = this.HMAC_SHA256_CALC(this.client_id);
+      this.platform.log.debug('Token: ' + sign.sign + ' Time: ' + sign.timestamp);
       return this.api.get('/v1.0/token?grant_type=1', {
         headers: {
           'sign': sign.sign,
@@ -101,7 +102,7 @@ export class TuyaApi {
   async getDoorSensorStatus(device_id) {
     await this.getToken();
     const sign = this.HMAC_SHA256_CALC(this.client_id + this.access_token);
-    return this.api.get('/v1.0/devices/' + device_id, {
+    return this.api.get('/v1.0/iot-03/devices/' + device_id, {
       headers: {
         'sign': sign.sign,
         't': sign.timestamp,
