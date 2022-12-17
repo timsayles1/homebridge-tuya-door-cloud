@@ -1,36 +1,26 @@
-// Custom made wrapper for Tuya Cloud API
-
 import hmacSHA256 from 'crypto-js/hmac-sha256';
 import axios, {AxiosInstance} from 'axios';
 import { TuyaDoorPlatform } from './platform';
 
-/**
- * Tuya Cloud API custom interface
- * This object directly interfaces with Tuya's Cloud API
- * It uses the client id and secret key from the Tuya IOT platform
- * and uses them to generate the signs, tokens and everything needed
- * to get the contact sensors states.
- */
 export class TuyaApi {
   private readonly secret: string;
   private readonly client_id: string;
   private lastToken: number;
   private access_token: string;
   private tokValidity: number;
+  private timestamp: number;
+  private nonce: number;
+  private signStr: string;
   private api: AxiosInstance;
-
-  /**
-   * Object constructor, used to declare params and ensure type
-   * @param platform Platform object used to log what the api does & get config
-   */
   constructor(private readonly platform: TuyaDoorPlatform) {
     this.secret = this.platform.config.options.secret_id;
     this.client_id = this.platform.config.options.access_id;
     this.lastToken = 0;
     this.access_token = '';
+    this.nonce = '';
+    this.timestamp = new Date().getTime();
+    this.signStr = '';
     this.tokValidity = 7200; //by default a token is valid for 2h or 7200s
-
-    // Setup a default axios object for easier rest calls
     this.api = axios.create({
       baseURL: this.platform.config.options.cloudCode,
       headers: {
@@ -38,10 +28,15 @@ export class TuyaApi {
         'client_id': this.client_id,
       },
     });
-
-    // Ask for a token on init, just in case
-    const sign = this.HMAC_SHA256_CALC(this.client_id);
-    this.api.get('/v1.0/token?grant_type=1', {
+    const xurl = '/v1.0/token?grant_type=1';
+    const query = 'grant_type=1';
+    const mode = '';
+    const httpMethod = 'GET';
+    const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
+    const urlStr = signMap["url"];
+    const signStr = signMap["signUrl"];
+    const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
+    this.api.get(this.xurl, {
       headers: {
         'sign': sign.sign,
         't': sign.timestamp,
@@ -53,34 +48,72 @@ export class TuyaApi {
     });
   }
 
-  /**
-   * Signature calculator
-   * @param message The message to encrypt, check Tuya docs for more info
-   */
-  HMAC_SHA256_CALC(message) {
-    const timestamp = new Date().getTime();
-    const toCrypt = message + timestamp;
-    const firstPass = hmacSHA256(toCrypt, this.secret);
-    const hashed = firstPass.toString().toUpperCase();
+  calcSign(clientId,access_token,timestamp,nonce,signStr,secret){
+    const str = clientId + access_token + timestamp + nonce + signStr;
+    const hash = HmacSHA256(str, secret);
+    const hashInBase64 = hash.toString();
+    const signUp = hashInBase64.toUpperCase();
     return {
-      sign: hashed,
-      timestamp: timestamp,
-    };
+      sign: signUp,
+      timestamp: timestamp
+    }   
   }
 
-  /**
-   * Function to get AND check the validity of a token
-   * If the token is expired, it generates a new one
-   */
-  async getToken() {
+  function stringToSign(query, mode, method, secret,xurl){
+    const burl = this.platform.config.options.cloudCode;
+    var url = burl + xurl;
+    var sha256 = "";
+    var headersStr = "";
+    const headers = this.api.headers;
+    var map = {}
+    var arr = []
+    var bodyStr = ""
+    if(query){
+        toJsonObj(query, arr, map)
+    }
+    arr = arr.sort()
+    arr.forEach(function(item){
+            url += item + "=" + map[item] + "&"
+    })
+    if (url.length > 0 ) {
+        url = url.substring(0, url.length-1)
+        url = "/" + pm.request.url.path.join("/") + "?" + url
+    } else {
+        url = "/" + pm.request.url.path.join("/") 
+    }
+    
+    if (headers.has("Signature-Headers") && headers.get("Signature-Headers")) {
+        var signHeaderStr = headers.get("Signature-Headers")
+        const signHeaderKeys = signHeaderStr.split(":")
+        signHeaderKeys.forEach(function(item){
+            var val = ""
+            if (pm.request.headers.get(item)) {
+                val = pm.request.headers.get(item)
+            }
+            headersStr += item + ":" + val + "\n"
+        })
+    }
+    var map = {}
+    map["signUrl"] = method + "\n" + sha256 + "\n" + headersStr + "\n" + url
+    map["url"] = url
+    return map
+  }
+  
+ async getToken() {
     const timestamp = new Date().getTime();
-    // Undefined check in case the token wasn't defined properly previously (this should not happen)
     if (timestamp - this.lastToken > this.tokValidity || this.access_token === undefined) {
-      // regenerate an access token please 🥺
       this.platform.log.debug('Generating new token');
-      const sign = this.HMAC_SHA256_CALC(this.client_id);
+      const access_token = '';
+      const xurl = '/v1.0/token?grant_type=1';
+      const query = 'grant_type=1';
+      const mode = '';
+      const httpMethod = 'GET';
+      const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
+      const urlStr = signMap["url"];
+      const signStr = signMap["signUrl"];
+      const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
       this.platform.log.debug('Token: ' + sign.sign + ' Time: ' + sign.timestamp);
-      return this.api.get('/v1.0/token?grant_type=1', {
+      return this.api.get(this.xurl, {
         headers: {
           'sign': sign.sign,
           't': sign.timestamp,
@@ -95,13 +128,16 @@ export class TuyaApi {
     }
   }
 
-  /**
-   * This function is used to
-   * @param device_id
-   */
   async getDoorSensorStatus(device_id) {
     await this.getToken();
-    const sign = this.HMAC_SHA256_CALC(this.client_id + this.access_token);
+    const xurl = '/v1.0/iot-03/devices/'+ device_id;
+    const query = '';
+    const mode = '';
+    const httpMethod = 'GET';
+    const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
+    const urlStr = signMap["url"];
+    const signStr = signMap["signUrl"];
+    const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
     return this.api.get('/v1.0/iot-03/devices/' + device_id, {
       headers: {
         'sign': sign.sign,
