@@ -8,9 +8,6 @@ export class TuyaApi {
   private lastToken: number;
   private access_token: string;
   private tokValidity: number;
-  private timestamp: number;
-  private nonce: number;
-  private signStr: string;
   private api: AxiosInstance;
   constructor(private readonly platform: TuyaDoorPlatform) {
     this.secret = this.platform.config.options.secret_id;
@@ -18,7 +15,6 @@ export class TuyaApi {
     this.lastToken = 0;
     this.access_token = '';
     this.nonce = '';
-    this.timestamp = new Date().getTime();
     this.signStr = '';
     this.tokValidity = 7200; //by default a token is valid for 2h or 7200s
     this.api = axios.create({
@@ -28,15 +24,17 @@ export class TuyaApi {
         'client_id': this.client_id,
       },
     });
-    const xurl = '/v1.0/token?grant_type=1';
-    const query = 'grant_type=1';
-    const mode = '';
-    const httpMethod = 'GET';
-    const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
-    const urlStr = signMap["url"];
-    const signStr = signMap["signUrl"];
-    const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
-    this.api.get(this.xurl, {
+    var timestamp = new Date().getTime();
+    const burl = this.platform.config.options.cloudCode;
+    var xurl = '/v1.0/token?grant_type=1';
+    var query = 'grant_type=1';
+    var mode = '';
+    var httpMethod = 'GET';
+    var signMap = this.stringToSign(query, mode, httpMethod, this.secret, burl+xurl);
+    var urlStr = signMap["url"];
+    var signStr = signMap["signUrl"];
+    var sign = this.calcSign(this.client_id, this.access_token, timestamp, this.nonce, signStr, this.secret);
+    this.api.get(burl+xurl, {
       headers: {
         'sign': sign.sign,
         't': sign.timestamp,
@@ -59,7 +57,7 @@ export class TuyaApi {
     }   
   }
 
-  function stringToSign(query, mode, method, secret,xurl){
+  function stringToSign(query, mode, method, secret, xurl){
     const burl = this.platform.config.options.cloudCode;
     var url = burl + xurl;
     var sha256 = "";
@@ -67,7 +65,7 @@ export class TuyaApi {
     const headers = this.api.headers;
     var map = {}
     var arr = []
-    var bodyStr = ""
+    var bodyStr = "";
     if(query){
         toJsonObj(query, arr, map)
     }
@@ -100,20 +98,21 @@ export class TuyaApi {
   }
   
  async getToken() {
-    const timestamp = new Date().getTime();
+    var timestamp = new Date().getTime();
     if (timestamp - this.lastToken > this.tokValidity || this.access_token === undefined) {
       this.platform.log.debug('Generating new token');
-      const access_token = '';
-      const xurl = '/v1.0/token?grant_type=1';
-      const query = 'grant_type=1';
-      const mode = '';
-      const httpMethod = 'GET';
-      const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
+      this.access_token = '';
+      const burl = this.platform.config.options.cloudCode;
+      var xurl = '/v1.0/token?grant_type=1';
+      var query = 'grant_type=1';
+      var mode = '';
+      var httpMethod = 'GET';
+      var signMap = this.stringToSign(query, mode, httpMethod, this.secret, burl+xurl);
       const urlStr = signMap["url"];
       const signStr = signMap["signUrl"];
-      const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
+      const sign = this.calcSign(this.client_id, this.access_token, timestamp, this.nonce, signStr, this.secret);
       this.platform.log.debug('Token: ' + sign.sign + ' Time: ' + sign.timestamp);
-      return this.api.get(this.xurl, {
+      return this.api.get(xurl, {
         headers: {
           'sign': sign.sign,
           't': sign.timestamp,
@@ -130,14 +129,16 @@ export class TuyaApi {
 
   async getDoorSensorStatus(device_id) {
     await this.getToken();
-    const xurl = '/v1.0/iot-03/devices/'+ device_id;
-    const query = '';
-    const mode = '';
-    const httpMethod = 'GET';
-    const signMap = stringToSign(this.query, this.mode, this.httpMethod, this.secret, this.xurl);
+    var timestamp = new Date().getTime();
+    const burl = this.platform.config.options.cloudCode;
+    var xurl = '/v1.0/iot-03/devices/'+ device_id;
+    var query = '';
+    var mode = '';
+    var httpMethod = 'GET';
+    const signMap = this.stringToSign(query, mode, httpMethod, this.secret, burl+xurl);
     const urlStr = signMap["url"];
     const signStr = signMap["signUrl"];
-    const sign = this.calcSign(this.client_id, this.access_token, this.timestamp, this.nonce, this.signStr, this.secret);
+    const sign = this.calcSign(this.client_id, this.access_token, timestamp, this.nonce, signStr, this.secret);
     return this.api.get('/v1.0/iot-03/devices/' + device_id, {
       headers: {
         'sign': sign.sign,
